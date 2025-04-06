@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-5">
+                    <h1 class="display-5 fw-bold mb-4">Manage Your Stock Portfolio</h1>
+                    <p class="lead mb-4">Track your investments, analyze performance, and make informed decisions with our easy-to-use portfolio management system.</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">View Dashboard</a>
+                        {% else %}
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">Get Started</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <svg class="img-fluid" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="50" y="150" width="50" height="100" fill="#4dc9f6" />
+                        <rect x="120" y="100" width="50" height="150" fill="#f67019" />
+                        <rect x="190" y="70" width="50" height="180" fill="#f53794" />
+                        <rect x="260" y="120" width="50" height="130" fill="#537bc4" />
+                        <polyline points="50,150 95,110 145,130 190,70 240,90 285,60 310,120" 
+                                  fill="none" stroke="#00a950" stroke-width="4" />
+                        <circle cx="50" cy="150" r="5" fill="#00a950" />
+                        <circle cx="95" cy="110" r="5" fill="#00a950" />
+                        <circle cx="145" cy="130" r="5" fill="#00a950" />
+                        <circle cx="190" cy="70" r="5" fill="#00a950" />
+                        <circle cx="240" cy="90" r="5" fill="#00a950" />
+                        <circle cx="285" cy="60" r="5" fill="#00a950" />
+                        <circle cx="310" cy="120" r="5" fill="#00a950" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                    <h3>Portfolio Tracking</h3>
+                    <p>Monitor your investments in real-time with up-to-date market data and performance metrics.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-exchange-alt fa-3x text-primary mb-3"></i>
+                    <h3>Transaction History</h3>
+                    <p>Keep a detailed record of all your buy and sell transactions for better decision making.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                    <h3>Performance Analysis</h3>
+                    <p>Visualize your portfolio performance with interactive charts and detailed metrics.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Get Started in 3 Easy Steps</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-4">
+                                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <h3 class="m-0">1</h3>
+                                </div>
+                                <h4>Create an Account</h4>
+                                <p>Register for free and set up your personal portfolio dashboard.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-4">
+                                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <h3 class="m-0">2</h3>
+                                </div>
+                                <h4>Add Your Stocks</h4>
+                                <p>Enter your stock holdings and transaction details.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-4">
+                                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <h3 class="m-0">3</h3>
+                                </div>
+                                <h4>Track Performance</h4>
+                                <p>Monitor your portfolio's performance and make informed decisions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

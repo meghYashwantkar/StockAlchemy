@@ -1,0 +1,32 @@
+<form method="POST" action="{{ url_for('sell_stock', stock_id=stock.id) }}">
+    {{ form.hidden_tag() }}
+    
+    <div class="text-center mb-3">
+        <h4>{{ stock.symbol }} - {{ stock.company_name }}</h4>
+        <p class="text-muted">Current Price: ${{ "%.2f"|format(stock.current_price) }}</p>
+        <p>You currently own {{ portfolio.quantity }} shares</p>
+    </div>
+    
+    <div class="mb-3">
+        <label for="quantity" class="form-label">{{ form.quantity.label }}</label>
+        {{ form.quantity(class="form-control", placeholder="Number of shares to sell") }}
+        {% for error in form.quantity.errors %}
+            <div class="text-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+    
+    <div class="mb-3">
+        <label for="price" class="form-label">{{ form.price.label }}</label>
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+            {{ form.price(class="form-control") }}
+        </div>
+        {% for error in form.price.errors %}
+            <div class="text-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+    
+    <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-danger") }}
+    </div>
+</form>

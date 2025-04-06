@@ -1,0 +1,221 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+    .portfolio-summary-card {
+        transition: transform 0.3s;
+    }
+    .portfolio-summary-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Dashboard</h1>
+    
+    <!-- Portfolio Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3 portfolio-summary-card">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle text-muted">Total Investment</h6>
+                    <h2 class="card-title">${{ "%.2f"|format(totals.total_investment) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3 portfolio-summary-card">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle text-muted">Current Value</h6>
+                    <h2 class="card-title">${{ "%.2f"|format(totals.total_current_value) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3 portfolio-summary-card">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle text-muted">Profit/Loss</h6>
+                    <h2 class="card-title {% if totals.total_profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "+" if totals.total_profit_loss >= 0 else "" }}${{ "%.2f"|format(totals.total_profit_loss) }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3 portfolio-summary-card">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle text-muted">Return</h6>
+                    <h2 class="card-title {% if totals.profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "+" if totals.profit_loss_percentage >= 0 else "" }}{{ "%.2f"|format(totals.profit_loss_percentage) }}%
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Portfolio Visualization and Holdings -->
+    <div class="row mb-4">
+        <!-- Portfolio Visualization -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Portfolio Allocation</h5>
+                </div>
+                <div class="card-body">
+                    {% if chart_data.labels|length > 0 %}
+                    <canvas id="portfolioChart" width="400" height="300"></canvas>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="lead">No stocks in your portfolio yet</p>
+                        <a href="{{ url_for('portfolio') }}" class="btn btn-primary">Add Stocks</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Transactions</h5>
+                    <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Symbol</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>{{ transaction.timestamp.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ transaction.stock.symbol }}</td>
+                                    <td>
+                                        <span class="badge {% if transaction.transaction_type == 'BUY' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ transaction.transaction_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ transaction.quantity }}</td>
+                                    <td>${{ "%.2f"|format(transaction.price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <p class="lead">No transactions recorded yet</p>
+                        <a href="{{ url_for('portfolio') }}" class="btn btn-primary">Add Stocks</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Portfolio Holdings -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Your Holdings</h5>
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-sm btn-outline-primary">Manage Portfolio</a>
+                </div>
+                <div class="card-body">
+                    {% if portfolio %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Company</th>
+                                    <th>Shares</th>
+                                    <th>Avg. Price</th>
+                                    <th>Current Price</th>
+                                    <th>Current Value</th>
+                                    <th>Profit/Loss</th>
+                                    <th>Return</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in portfolio %}
+                                <tr>
+                                    <td>{{ item.stock.symbol }}</td>
+                                    <td>{{ item.stock.company_name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ "%.2f"|format(item.average_buy_price) }}</td>
+                                    <td>${{ "%.2f"|format(item.stock.current_price) }}</td>
+                                    <td>${{ "%.2f"|format(item.current_value) }}</td>
+                                    <td class="{% if item.profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ "+" if item.profit_loss >= 0 else "" }}${{ "%.2f"|format(item.profit_loss) }}
+                                    </td>
+                                    <td class="{% if item.profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ "+" if item.profit_loss_percentage >= 0 else "" }}{{ "%.2f"|format(item.profit_loss_percentage) }}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="lead">Your portfolio is empty</p>
+                        <a href="{{ url_for('portfolio') }}" class="btn btn-primary">Add Stocks</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data.labels|length > 0 %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    
+    // Ensure all data is properly serialized
+    const labels = JSON.parse('{{ chart_data.labels|tojson|safe }}');
+    const values = JSON.parse('{{ chart_data.values|tojson|safe }}');
+    const colors = JSON.parse('{{ chart_data.colors|tojson|safe }}');
+    
+    const portfolioChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

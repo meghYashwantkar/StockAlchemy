@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">Record Transaction</h2>
+                    <form method="POST" action="{{ url_for('record_transaction') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">{{ form.symbol.label }}</label>
+                            <div class="input-group">
+                                {{ form.symbol(class="form-control", placeholder="e.g. AAPL") }}
+                                <button class="btn btn-outline-secondary" type="button" id="checkSymbol">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div id="symbolInfo" class="form-text"></div>
+                            {% for error in form.symbol.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="transaction_type" class="form-label">{{ form.transaction_type.label }}</label>
+                            {{ form.transaction_type(class="form-select") }}
+                            {% for error in form.transaction_type.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">{{ form.quantity.label }}</label>
+                            {{ form.quantity(class="form-control", placeholder="Number of shares") }}
+                            {% for error in form.quantity.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="price" class="form-label">{{ form.price.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.price(class="form-control", placeholder="Price per share") }}
+                            </div>
+                            {% for error in form.price.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Check if stock symbol exists and get current price
+document.getElementById('checkSymbol').addEventListener('click', function() {
+    const symbolInput = document.getElementById('symbol');
+    const symbolInfo = document.getElementById('symbolInfo');
+    const priceInput = document.getElementById('price');
+    
+    if (!symbolInput.value) {
+        symbolInfo.innerHTML = '<span class="text-warning">Please enter a stock symbol</span>';
+        return;
+    }
+    
+    symbolInfo.innerHTML = '<span class="text-info">Checking symbol...</span>';
+    
+    fetch(`/search_stock?symbol=${symbolInput.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                symbolInfo.innerHTML = `<span class="text-danger">${data.error}</span>`;
+            } else {
+                symbolInfo.innerHTML = `<span class="text-success">${data.company_name} - Current price: $${data.current_price.toFixed(2)}</span>`;
+                priceInput.value = data.current_price.toFixed(2);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            symbolInfo.innerHTML = '<span class="text-danger">Error checking symbol</span>';
+        });
+});
+</script>
+{% endblock %}

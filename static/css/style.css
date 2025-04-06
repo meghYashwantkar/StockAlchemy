@@ -1,0 +1,104 @@
+/* 
+ * Stock Portfolio Management System - Custom styles
+ */
+
+/* Card hover effects */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #4dc9f6;
+    box-shadow: 0 0 0 0.25rem rgba(77, 201, 246, 0.25);
+}
+
+/* Table adjustments */
+.table > tbody > tr {
+    vertical-align: middle;
+}
+
+/* Badge styling */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+/* Modal animations */
+.modal .modal-content {
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chart container styling */
+canvas {
+    max-width: 100%;
+}
+
+/* Dashboard card hover effects */
+.portfolio-summary-card {
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.portfolio-summary-card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(77, 201, 246, 0.1) 0%, rgba(77, 201, 246, 0) 100%);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.portfolio-summary-card:hover::after {
+    opacity: 1;
+}
+
+/* Alert styling */
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+/* Custom pagination */
+.pagination .page-link {
+    color: #4dc9f6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4dc9f6;
+    border-color: #4dc9f6;
+}
+
+/* Footer styling */
+footer {
+    margin-top: auto;
+}
+
+/* Ensure page stretches to fill viewport */
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}

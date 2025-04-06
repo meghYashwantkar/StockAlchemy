@@ -1,0 +1,200 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Transaction History</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordTransactionModal">
+            <i class="fas fa-plus me-2"></i>Record Transaction
+        </button>
+    </div>
+    
+    <!-- Transactions Table -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="card-title mb-0">Your Transactions</h5>
+        </div>
+        <div class="card-body">
+            {% if transactions.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Company</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions.items %}
+                        <tr>
+                            <td>{{ transaction.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ transaction.stock.symbol }}</td>
+                            <td>{{ transaction.stock.company_name }}</td>
+                            <td>
+                                <span class="badge {% if transaction.transaction_type == 'BUY' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ transaction.transaction_type }}
+                                </span>
+                            </td>
+                            <td>{{ transaction.quantity }}</td>
+                            <td>${{ "%.2f"|format(transaction.price) }}</td>
+                            <td>${{ "%.2f"|format(transaction.transaction_value) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Transaction pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if transactions.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions', page=transactions.prev_num) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in transactions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == transactions.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('transactions', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if transactions.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions', page=transactions.next_num) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                <p class="lead">No transactions recorded yet</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordTransactionModal">
+                    Record Your First Transaction
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Record Transaction Modal -->
+<div class="modal fade" id="recordTransactionModal" tabindex="-1" aria-labelledby="recordTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recordTransactionModalLabel">Record Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('record_transaction') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">{{ form.symbol.label }}</label>
+                        <div class="input-group">
+                            {{ form.symbol(class="form-control", placeholder="e.g. AAPL") }}
+                            <button class="btn btn-outline-secondary" type="button" id="checkSymbolTran">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div id="symbolInfoTran" class="form-text"></div>
+                        {% for error in form.symbol.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_type" class="form-label">{{ form.transaction_type.label }}</label>
+                        {{ form.transaction_type(class="form-select") }}
+                        {% for error in form.transaction_type.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">{{ form.quantity.label }}</label>
+                        {{ form.quantity(class="form-control", placeholder="Number of shares") }}
+                        {% for error in form.quantity.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="price" class="form-label">{{ form.price.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.price(class="form-control", placeholder="Price per share", id="priceTransaction") }}
+                        </div>
+                        {% for error in form.price.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Check if stock symbol exists and get current price for transaction modal
+document.getElementById('checkSymbolTran').addEventListener('click', function() {
+    const symbolInput = document.getElementById('symbol');
+    const symbolInfo = document.getElementById('symbolInfoTran');
+    const priceInput = document.getElementById('priceTransaction');
+    
+    if (!symbolInput.value) {
+        symbolInfo.innerHTML = '<span class="text-warning">Please enter a stock symbol</span>';
+        return;
+    }
+    
+    symbolInfo.innerHTML = '<span class="text-info">Checking symbol...</span>';
+    
+    fetch(`/search_stock?symbol=${symbolInput.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                symbolInfo.innerHTML = `<span class="text-danger">${data.error}</span>`;
+            } else {
+                symbolInfo.innerHTML = `<span class="text-success">${data.company_name} - Current price: $${data.current_price.toFixed(2)}</span>`;
+                priceInput.value = data.current_price.toFixed(2);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            symbolInfo.innerHTML = '<span class="text-danger">Error checking symbol</span>';
+        });
+});
+</script>
+{% endblock %}
