@@ -2,6 +2,7 @@ from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 from datetime import datetime
 import logging
+import json
 
 from app import app, db
 from models import User, Stock, Portfolio, Transaction
@@ -81,7 +82,43 @@ def dashboard():
     # Get portfolio data
     portfolio_items = Portfolio.query.filter_by(user_id=current_user.id).all()
     totals = calculate_portfolio_totals(current_user.id)
-    chart_data = get_portfolio_data_for_chart(current_user.id)
+    
+    # Create empty arrays for chart data (using only primitive types)
+    labels = []
+    values = []
+    colors = []
+    
+    # Define colors as simple strings
+    color_list = [
+        '#4dc9f6', '#f67019', '#f53794', '#537bc4', '#acc236',
+        '#166a8f', '#00a950', '#58595b', '#8549ba', '#8b0000'
+    ]
+    
+    # Process portfolio items safely
+    if portfolio_items:
+        for i, item in enumerate(portfolio_items):
+            try:
+                # Only include items with valid data
+                if item.quantity > 0 and item.stock and item.stock.current_price:
+                    # Use only primitive types (string, float)
+                    symbol = str(item.stock.symbol)
+                    value = float(item.quantity) * float(item.stock.current_price)
+                    color = str(color_list[i % len(color_list)])
+                    
+                    # Add to our arrays
+                    labels.append(symbol)
+                    values.append(value)
+                    colors.append(color)
+            except Exception as e:
+                print(f"Error processing portfolio item {i}: {e}")
+    
+    # Pre-convert to JSON strings
+    chart_data = {
+        'has_data': len(labels) > 0,
+        'labels_json': json.dumps(labels),
+        'values_json': json.dumps(values),
+        'colors_json': json.dumps(colors)
+    }
     
     # Recent transactions
     recent_transactions = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.timestamp.desc()).limit(5).all()

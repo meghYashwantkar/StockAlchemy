@@ -8,6 +8,30 @@
     .portfolio-summary-card:hover {
         transform: translateY(-5px);
     }
+    #debug-output {
+        background-color: #343a40;
+        color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        max-height: 200px;
+        overflow: auto;
+    }
+    .chart-container {
+        position: relative;
+        margin: 0 auto;
+        height: 300px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .card-body {
+        display: flex;
+        flex-direction: column;
+    }
 </style>
 {% endblock %}
 
@@ -64,8 +88,22 @@
                     <h5 class="card-title mb-0">Portfolio Allocation</h5>
                 </div>
                 <div class="card-body">
-                    {% if chart_data.labels|length > 0 %}
-                    <canvas id="portfolioChart" width="400" height="300"></canvas>
+                    <!-- Debug output (only visible when needed) -->
+                    <div id="debug-output" style="display: none;">
+                        <strong>Chart Data Debugging:</strong>
+                        <div><strong>Has Data:</strong> {{ chart_data.has_data }}</div>
+                        <div><strong>Labels JSON:</strong> <pre>{{ chart_data.labels_json }}</pre></div>
+                        <div><strong>Values JSON:</strong> <pre>{{ chart_data.values_json }}</pre></div>
+                        <div><strong>Colors JSON:</strong> <pre>{{ chart_data.colors_json }}</pre></div>
+                    </div>
+                    <button id="toggle-debug" class="btn btn-sm btn-secondary mb-3" style="display: none;">
+                        Show Debug Info
+                    </button>
+                    
+                    {% if chart_data.has_data %}
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
                     {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
@@ -185,36 +223,70 @@
 {% endblock %}
 
 {% block scripts %}
-{% if chart_data.labels|length > 0 %}
+{% if chart_data.has_data %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    // Set up debugging
+    const debugOutput = document.getElementById('debug-output');
+    const toggleDebug = document.getElementById('toggle-debug');
     
-    // Ensure all data is properly serialized
-    const labels = JSON.parse('{{ chart_data.labels|tojson|safe }}');
-    const values = JSON.parse('{{ chart_data.values|tojson|safe }}');
-    const colors = JSON.parse('{{ chart_data.colors|tojson|safe }}');
-    
-    const portfolioChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: colors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                }
-            }
+    // Show debug toggle button
+    toggleDebug.style.display = 'inline-block';
+    toggleDebug.addEventListener('click', function() {
+        if (debugOutput.style.display === 'none') {
+            debugOutput.style.display = 'block';
+            toggleDebug.textContent = 'Hide Debug Info';
+        } else {
+            debugOutput.style.display = 'none';
+            toggleDebug.textContent = 'Show Debug Info';
         }
     });
+    
+    try {
+        // Get pre-serialized JSON data (already converted to strings in the Flask route)
+        const labels = JSON.parse('{{ chart_data.labels_json|safe }}');
+        const values = JSON.parse('{{ chart_data.values_json|safe }}');
+        const colors = JSON.parse('{{ chart_data.colors_json|safe }}');
+        
+        console.log("Chart data parsed successfully:", labels, values, colors);
+        
+        // Create the chart
+        const ctx = document.getElementById('portfolioChart').getContext('2d');
+        const portfolioChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        align: 'center',
+                    }
+                },
+                layout: {
+                    padding: {
+                        top: 5,
+                        bottom: 5
+                    }
+                },
+                animation: {
+                    duration: 500 // Reduce animation duration
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error creating chart:", error);
+        debugOutput.style.display = 'block';
+        debugOutput.innerHTML += '<div class="alert alert-danger">' + error.message + '</div>';
+    }
 });
 </script>
 {% endif %}

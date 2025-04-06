@@ -9,19 +9,52 @@ def get_stock_info(symbol):
     Get stock information from Yahoo Finance API
     Returns a dict with company name and current price
     """
+    if not symbol:
+        logging.error("Empty symbol provided to get_stock_info")
+        return None
+        
     try:
+        print(f"Fetching stock info for {symbol}")
         stock = yf.Ticker(symbol)
-        info = stock.info
         
-        # Extract the relevant information
-        company_name = info.get('longName', info.get('shortName', 'Unknown'))
-        current_price = info.get('regularMarketPrice', info.get('currentPrice', 0))
-        
-        return {
-            'symbol': symbol.upper(),
-            'company_name': company_name,
-            'current_price': current_price
-        }
+        # Try to get price information
+        try:
+            # First try to get price directly from ticker
+            current_price = stock.info.get('regularMarketPrice')
+            if not current_price or current_price == 0:
+                current_price = stock.info.get('currentPrice')
+            
+            # If that fails, try getting recent history
+            if not current_price or current_price == 0:
+                hist = stock.history(period="1d")
+                if not hist.empty and 'Close' in hist.columns:
+                    current_price = float(hist['Close'].iloc[-1])
+                    
+            # Default fallback
+            if not current_price or current_price == 0:
+                print(f"Warning: Could not get price for {symbol}, using default")
+                current_price = 0.0
+                
+            # Get company name
+            company_name = stock.info.get('longName') 
+            if not company_name:
+                company_name = stock.info.get('shortName', symbol.upper())
+            
+            print(f"Successfully retrieved {symbol} data: {company_name}, ${current_price}")
+            
+            return {
+                'symbol': symbol.upper(),
+                'company_name': company_name,
+                'current_price': float(current_price)
+            }
+        except Exception as e:
+            logging.error(f"Error getting price for {symbol}: {str(e)}")
+            return {
+                'symbol': symbol.upper(),
+                'company_name': symbol.upper() + ' Inc.',
+                'current_price': 0.0
+            }
+            
     except Exception as e:
         logging.error(f"Error fetching stock info for {symbol}: {str(e)}")
         return None
@@ -79,47 +112,83 @@ def calculate_portfolio_totals(user_id):
 
 def get_portfolio_data_for_chart(user_id):
     """Get portfolio data formatted for chart visualization"""
+    # Get portfolios with proper joining to ensure stock data is available
     portfolios = Portfolio.query.filter_by(user_id=user_id).all()
     
-    # Prepare data for pie chart
-    labels = []
-    values = []
-    colors = []
+    # Debug information
+    print(f"Found {len(portfolios)} portfolio positions for user {user_id}")
     
-    # List of distinct colors for the chart
-    color_palette = [
+    # Prepare data structures with primitives only
+    chart_data = {
+        'labels': [],
+        'values': [],
+        'colors': []
+    }
+    
+    # Color list (pure strings)
+    colors = [
         '#4dc9f6', '#f67019', '#f53794', '#537bc4', '#acc236',
-        '#166a8f', '#00a950', '#58595b', '#8549ba', '#8b0000',
+        '#166a8f', '#00a950', '#58595b', '#8549ba', '#8b0000', 
         '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4'
     ]
     
-    # Get portfolio data
+    # Check if portfolio is empty
+    if not portfolios:
+        print("Portfolio is empty, returning empty chart data")
+        return chart_data
+    
+    # Process each portfolio position
     for i, position in enumerate(portfolios):
-        # Skip positions with no quantity or price
-        if (not position.quantity or position.quantity <= 0 or 
-            not position.stock or not position.stock.current_price):
-            continue
-            
         try:
-            # Calculate value manually to avoid property methods
+            # Skip invalid data
+            if not position.quantity or position.quantity <= 0:
+                print(f"Skipping position with invalid quantity: {position.quantity}")
+                continue
+            
+            # Ensure stock exists and has a price
+            if not position.stock:
+                print(f"Skipping position with missing stock data")
+                continue
+                
+            if not position.stock.current_price or position.stock.current_price <= 0:
+                print(f"Stock {position.stock.symbol} has invalid price: {position.stock.current_price}")
+                # Try to update the stock price
+                stock_info = get_stock_info(position.stock.symbol)
+                if stock_info and stock_info.get('current_price', 0) > 0:
+                    position.stock.current_price = stock_info['current_price']
+                    position.stock.last_updated = datetime.utcnow()
+                    try:
+                        db.session.commit()
+                        print(f"Updated price for {position.stock.symbol} to {position.stock.current_price}")
+                    except Exception as e:
+                        db.session.rollback()
+                        print(f"Failed to update price: {e}")
+                else:
+                    print(f"Could not get valid price for {position.stock.symbol}")
+                    continue
+            
+            # Compute value as a primitive float
             quantity = float(position.quantity)
             price = float(position.stock.current_price)
             value = quantity * price
             
-            labels.append(str(position.stock.symbol))
-            values.append(float(value))
-            colors.append(str(color_palette[i % len(color_palette)]))
+            # Only use primitive strings and floats
+            symbol = str(position.stock.symbol)
+            color_index = i % len(colors)
+            
+            # Add primitives to the result
+            chart_data['labels'].append(symbol)
+            chart_data['values'].append(value)
+            chart_data['colors'].append(colors[color_index])
+            
+            print(f"Added position to chart: {symbol}, value: {value}")
+            
         except Exception as e:
-            # Log error but continue with other positions
-            print(f"Error processing portfolio position: {str(e)}")
+            print(f"Error processing portfolio position: {e}")
             continue
     
-    # Return simple Python primitives
-    return {
-        'labels': labels,
-        'values': values,
-        'colors': colors
-    }
+    print(f"Final chart data: {len(chart_data['labels'])} stocks, values: {chart_data['values']}")
+    return chart_data
 
 def update_average_buy_price(portfolio):
     """Recalculate the average buy price for a portfolio position"""
